@@ -42,11 +42,17 @@ public class mytemp {
 		 * false是没有关联关系，不查表且移出数组，到5 4.查表：调用方法doCompositionTable()，得到可能的关系集合
 		 * 5.对关系集合数组遍历,相同的归到一起，求交集，放入map，交集为空则出现矛盾，清空map；交集不为空整理打印结果
 		 */
+		/*BUG=.=
+		 *1.当只遇到一组ab的可能关系集时，map为空，但实际上这唯一的一组关系集即推理结果。
+		 *2.没有判断推理出的结果中是否有已知关系的三元组，有的话即发生了冲突，没有则正常。
+		 *3.对结果进行排序。
+		 */
 		String path = ".//input//";
-		// String file = "input.txt";
-		String file = "IntervalBased11.txt";
+		String file = "Consistent.txt";
+		//String file = "IntervalBased11.txt";
 		String filename = path + file;
 		String outfile = path + "upd" + file;
+		String outsortfile = path + "updSort" + file;
 		String stdfile = path + "std" + file;
 		File f = new File(stdfile);
 		f.createNewFile();
@@ -70,11 +76,7 @@ public class mytemp {
 		}
 		Set<String> ret = doArrangementStrEquals(inputl, map);
 		//getOutputFileStr(ret, outfile);
-		String[] sret=new String[ret.size()];
-		ret.toArray(sret);
-		List<String> forsort = Arrays.asList(sret);
-		Collections.sort(forsort);
-		getOutputFileStr(ret, outfile);
+		getOutputFileStrSort(ret, outsortfile);
 	}
 
 	public static void getOutputFile(ArrayList<mytriple> ret, String outfile) throws IOException {
@@ -105,12 +107,16 @@ public class mytemp {
 		fw.close();
 	}
 	
-	public static void getOutputFileStr(List<String> ret, String outfile) throws IOException {
+	public static void getOutputFileStrSort(Set<String> ret, String outfile) throws IOException {
+		String[] sret=new String[ret.size()];
+		ret.toArray(sret);
+		List<String> forsort = Arrays.asList(sret);
+		Collections.sort(forsort);
 		File file = new File(outfile);
 		file.createNewFile();
 		FileWriter fw = new FileWriter(outfile);
 		BufferedWriter bw = new BufferedWriter(fw);
-		for (String my : ret) {
+		for (String my : forsort) {
 			bw.write(my);
 			bw.newLine();
 			bw.flush();
