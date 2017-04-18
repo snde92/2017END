@@ -34,6 +34,7 @@ public class mytemp {
 	public static String F = "Finishes";
 	public static String Fi = "FinishedBy";
 	public static String Eq = "Equals";
+	public static boolean iscontinue=true;
 
 	public static void main(String arg[]) throws IOException {
 		/*
@@ -42,14 +43,18 @@ public class mytemp {
 		 * false是没有关联关系，不查表且移出数组，到5 4.查表：调用方法doCompositionTable()，得到可能的关系集合
 		 * 5.对关系集合数组遍历,相同的归到一起，求交集，放入map，交集为空则出现矛盾，清空map；交集不为空整理打印结果
 		 */
-		/*BUG=.=
-		 *1.当只遇到一组ab的可能关系集时，map为空，但实际上这唯一的一组关系集即推理结果。
-		 *2.没有判断推理出的结果中是否有已知关系的三元组，有的话即发生了冲突，没有则正常。
-		 *3.对结果进行排序。
+		/*BUG=.=TODO
+		 *1.当只遇到一组ab的可能关系集时，map为空，但实际上这唯一的一组关系集即推理结果。DONE
+		 *	增加flag标志这种特殊不冲突情况，将唯一的一组关系集加入map
+		 *2.没有判断推理出的结果中是否有已知关系的三元组，有的话可能发生了冲突，没有则正常。
+		 *	进行两次求交集 TODO
+		 *3.对结果进行排序。DONE
+		 *4.需不需要进行二次推理，即两重可能的关系下进行推理 TODO
+		 *	不断地进行循环求交集，直至结果不再出现新的元素，利用全局变量标志位iscontinueDONE
 		 */
 		String path = ".//input//";
-		String file = "Consistent.txt";
-		//String file = "IntervalBased11.txt";
+		//String file = "Consistent.txt";
+		String file = "IntervalBased12.txt";
 		String filename = path + file;
 		String outfile = path + "upd" + file;
 		String outsortfile = path + "updSort" + file;
@@ -59,22 +64,26 @@ public class mytemp {
 		FileOutputStream fileOutputStream = new FileOutputStream(f);
 		PrintStream printStream = new PrintStream(fileOutputStream);
 		System.setOut(printStream);
-		// String file = ".//inconsistent_exam.owl";
-		// ArrayList<mytriple> input = getMytriple_owl(file);
 		ArrayList<mytriple> inputl = getMytriple(filename);
 		ArrayList<my2triple> m2tl = getMy2triple(inputl);
 		ArrayList<mytriple> relal = getRelationList(m2tl);
-		Map<mytriple, Set<String>> map = doIntersection(relal);
+		//Map<mytriple, Set<String>> map = doIntersection(relal);
+		ArrayList<mytriple> map= doIntersectionLoop(relal);
+		while(iscontinue) {
+			map=doIntersectionLoop(map);
+		}
 		if (map.isEmpty()) {
 			System.out.println("Inconsistent!");
 		} else {
-			for (Map.Entry<mytriple, Set<String>> entry : map.entrySet()) {
+			for (mytriple entry : map) {
 				//System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
-				mytriple a = entry.getKey();
-				System.out.println(a.getSub() + entry.getValue() + a.getObj());
+				//mytriple a = entry.getKey();
+				//System.out.println(a.getSub() + entry.getValue() + a.getObj());
+				System.out.println(entry.toString());
 			}
 		}
-		Set<String> ret = doArrangementStrEquals(inputl, map);
+		Map<mytriple, Set<String>> onemap=listtomap(map); 
+		Set<String> ret = doArrangementStrEquals(inputl, onemap);
 		//getOutputFileStr(ret, outfile);
 		getOutputFileStrSort(ret, outsortfile);
 	}
@@ -247,6 +256,74 @@ public class mytemp {
 		return map;
 	}
 
+	public static ArrayList<mytriple> doIntersectionLoop(ArrayList<mytriple> relal) {
+		iscontinue=false;
+		ArrayList<mytriple> map = new ArrayList<mytriple>();
+		System.out.println("                                                                              here");
+		for (int i = 0; i < relal.size(); i++) {
+			mytriple one = relal.get(i);
+			boolean flag = false;
+			if(one.getType()) {//true right；false set
+				System.out.println("pred to prob in doIntersectionLoop");
+				one.setProb(one.getPred());
+			}
+			for (int j = i + 1; j < relal.size(); j++) {
+				mytriple two = relal.get(j);
+				if (one.equals(two)) {
+					flag = true;
+					System.out.println("                                                                           if");
+					// 判断两个关系集主语宾语一样，再求交集 one and two
+					if(two.getType()) {//true right；false set
+						two.setProb(two.getPred());
+					}
+					Set<String> ret = new HashSet<String>();
+					ret.clear();
+					ret.addAll(one.probrela);
+					ret.retainAll(two.probrela);
+					System.out.println("one haha " + one.probrela);
+					System.out.println("two hehe " + two.probrela);
+					int index=map.indexOf(one);
+					iscontinue=true;
+					if (index!=-1) {//存在one
+						Set<String> last = map.get(index).getProb();
+						// 与两条关系的交集作交集运算
+						Set<String> ret2 = new HashSet<String>();
+						ret2.clear();
+						ret2.addAll(ret);
+						ret.retainAll(last);
+						// 将新的交集覆盖掉旧的
+						one.setProb(ret2);
+						map.set(index,one);
+						System.out.println("intersection " + ret2);
+						if (ret2.isEmpty()) {
+							System.out.println("exists do retain empty!");
+							one.printinfo();
+							map.clear();
+							return map;
+						}
+					} else {
+						System.out.println("intersection " + ret);
+						one.setProb(ret);
+						map.add(one);
+						if (ret.isEmpty()) {
+							System.out.println("Intersection is empty!");
+							map.clear();
+							return map;
+						}
+					}
+				}
+			}
+			if (!flag) {
+				if (!map.contains(one)) {
+					one.printinfo();
+					map.add(one);
+				}
+			}
+		}
+		System.out.println("                    ---------------------in doIntersectionLOOP end");
+		return map;
+	}
+	
 	public static ArrayList<mytriple> getRelationList(ArrayList<my2triple> m2t) {
 		ArrayList<mytriple> ret = new ArrayList<mytriple>();
 		for (Iterator<my2triple> iterator1 = m2t.iterator(); iterator1.hasNext();) {
@@ -304,4 +381,13 @@ public class mytemp {
 		reader.close();
 		return ll;
 	}
+
+	public static Map<mytriple,Set<String>> listtomap(ArrayList<mytriple> mt) {
+		Map<mytriple,Set<String>> ret=new HashMap<mytriple,Set<String>>();
+		for(mytriple my:mt) {
+			ret.put(my, my.getProb());
+		}
+		return ret;
+	}
+
 }

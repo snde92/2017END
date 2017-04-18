@@ -1,5 +1,6 @@
 package triple;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -18,7 +19,7 @@ public class mytriple {
 	public static String Fi = "FinishedBy";
 	public static String Eq = "Equals";
 	public String sub, pred, obj;
-	public boolean type;//0 right relation; 1 prob relation
+	public boolean type;// 0 right relation; 1 prob relation
 	public Set<String> probrela;
 
 	public mytriple(String a, String b, String c) {
@@ -26,17 +27,17 @@ public class mytriple {
 		obj = c;
 		pred = b;
 		type = false;
-		//probrela=new HashSet<String>();
-		//probrela.add(pred);
+		// probrela=new HashSet<String>();
+		// probrela.add(pred);
 	}
 
-	public mytriple(String a, Set<String> prob,String b) {
+	public mytriple(String a, Set<String> prob, String b) {
 		sub = a;
 		obj = b;
 		type = true;
-		probrela=prob;
+		probrela = prob;
 	}
-	
+
 	public String getSub() {
 		return sub;
 	}
@@ -57,10 +58,29 @@ public class mytriple {
 		return probrela;
 	}
 
-	public void setType(boolean a) {
-		type=a;
+	public void setProb(String one) {
+		if (!type) {
+			type=true;
+			probrela = new HashSet<String>();
+			probrela.add(one);
+		}
+	}
+
+	public void setProb(Set<String> one) {
+		if (!type) {
+			type=true;
+			probrela = one;
+		}
 	}
 	
+	public void setType(boolean a) {
+		type = a;
+	}
+
+	public boolean getType() {
+		return type;
+	}
+
 	public void doInverse() {
 		String tmp = sub;
 		sub = obj;
@@ -71,9 +91,9 @@ public class mytriple {
 
 	public mytriple getInverse() {
 		String tmp = getInverseRelation(pred);
-		return new mytriple(obj,tmp,sub);
+		return new mytriple(obj, tmp, sub);
 	}
-	
+
 	public void doSetInverse() {
 		String tmp = sub;
 		sub = obj;
@@ -81,7 +101,7 @@ public class mytriple {
 		for (Iterator<String> it = probrela.iterator(); it.hasNext();) {
 			String str = it.next();
 			tmp = getInverseRelation(str);
-			it.remove();//probrela.remove(str);
+			it.remove();// probrela.remove(str);
 			probrela.add(tmp);
 		}
 	}
@@ -115,44 +135,42 @@ public class mytriple {
 			return Eq;
 		}
 	}
-	
+
 	public boolean simequals(mytriple mt) {
-		return mt.getObj().equals(obj)&&mt.getSub().equals(sub);
+		return mt.getObj().equals(obj) && mt.getSub().equals(sub);
 	}
-	
+
 	public boolean equals(mytriple mt) {
-		if(mt.getObj().equals(obj)&&mt.getSub().equals(sub)) {
-			//System.out.println("in equals =");
+		if (mt.getObj().equals(obj) && mt.getSub().equals(sub)) {
+			// System.out.println("in equals =");
 			return true;
-		}
-		else if(mt.getObj().equals(sub)&&mt.getSub().equals(obj)) {
+		} else if (mt.getObj().equals(sub) && mt.getSub().equals(obj)) {
 			System.out.println("after dosetinverse");
 			doSetInverse();
 			System.out.println("after dosetinverse");
 			return true;
-		}
-		else
+		} else
 			return false;
 	}
-	
+
 	public boolean inverse(mytriple mt) {
-		return mt.getObj().equals(sub)&&mt.getSub().equals(obj);
+		return mt.getObj().equals(sub) && mt.getSub().equals(obj);
 	}
 
 	public String infoString() {
 		String a;
-		if(!type)
-			a=sub+" "+pred+" "+obj;
+		if (!type)
+			a = sub + " " + pred + " " + obj;
 		else
-			a=sub+" "+probrela+" "+obj;
+			a = sub + " " + probrela + " " + obj;
 		return a;
 	}
-	
+
 	public void printinfo() {
-		if(!type)
-			System.out.println(sub+pred+obj);
+		if (!type)
+			System.out.println(sub + pred + obj);
 		else
-			System.out.println(sub+probrela+obj);
+			System.out.println(sub + probrela + obj);
 	}
 
 }
